@@ -31,7 +31,7 @@ class AsyncCoinbaseAPI:
             **kwargs: Keyword arguments to pass onto the method.
 
         Returns:
-            Method call result.
+            Method call result or None if an exception occurs.
         """
         loop = asyncio.get_event_loop()
         method = getattr(self.client, method_name, None)
@@ -39,8 +39,16 @@ class AsyncCoinbaseAPI:
         if not method:
             raise AttributeError(f"Method '{method_name}' not found in RESTClient")
 
-        task_id, timestamp = self.generate_task_id() 
-        task = loop.run_in_executor(None, lambda: method(**kwargs))
+        task_id, timestamp = self.generate_task_id()
+
+        async def wrapped_method():
+            try:
+                result = await loop.run_in_executor(None, lambda: method(**kwargs))
+                return result, None
+            except Exception as e:
+                return None, type(e).__name__
+
+        task = asyncio.create_task(wrapped_method())
         self.tasks.append((task, method_name, task_id, timestamp))
 
         return await task
@@ -64,7 +72,6 @@ class AsyncCoinbaseAPI:
         except asyncio.CancelledError:
             pass
 
-    
     async def close(self):
         """
         Waits for all tracked async tasks to complete, cancels monitoring if it is running, and clears resources.
@@ -95,8 +102,11 @@ class AsyncCoinbaseAPI:
 
         for task, method_name, task_id, timestamp in self.tasks:
             if task.done():
-                exception = task.exception() if task.exception() else "None"
-                result = "Success" if not task.exception() else "Error"
+                result, exception = task.result()
+                if exception:
+                    result = "Error"
+                else:
+                    result = "Success"
             else:
                 exception = "Pending"
                 result = "Pending"
@@ -107,7 +117,7 @@ class AsyncCoinbaseAPI:
                 "method": method_name,
                 "state": "completed" if task.done() else "running",
                 "result": result,
-                "exception": exception
+                "exception": exception if exception else "None"
             }
             tasks_info.append(task_info)
 

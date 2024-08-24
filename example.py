@@ -1,7 +1,7 @@
 import os
 import asyncio
 from dotenv import load_dotenv
-from src.async_coinbase_api import AsyncCoinbaseAPI
+from AsyncCoinbaseAPI import AsyncCoinbaseAPI
 
 load_dotenv()
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         tasks.append(asyncio.create_task(api.async_call("get_candles", product_id="BTC-USD", start=start, end=end, granularity=granularity, limit=limit)))
         await asyncio.sleep(2)
         
-        tasks.append(asyncio.create_task(api.async_call("get_candles", product_id="ETH-USD", start=start, end=end, granularity=granularity, limit=limit)))
+        tasks.append(asyncio.create_task(api.async_call("get_candles", product_id="ETHUSD", start=start, end=end, granularity=granularity, limit=limit)))
         await asyncio.sleep(2)
         
         tasks.append(asyncio.create_task(api.async_call("get_candles", product_id="LTC-USD", start=start, end=end, granularity=granularity, limit=limit)))
