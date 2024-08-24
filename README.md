@@ -1,7 +1,5 @@
 # Async-Coinbase-API-Wrapper
 
-# Async Coinbase API Wrapper
-
 A Python wrapper for the Coinbase API that supports asynchronous API calls and real-time task monitoring.
 
 ![Demo of Async Coinbase API Wrapper](assets/example.gif)
