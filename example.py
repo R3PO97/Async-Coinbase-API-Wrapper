@@ -1,19 +1,20 @@
-import os
+import json
 import asyncio
-from dotenv import load_dotenv
 from AsyncCoinbaseAPI import AsyncCoinbaseAPI
 
-load_dotenv()
+# Load API credentials from JSON file
+with open('cdp_api_key.json', 'r') as file:
+    config = json.load(file)
 
-API_KEY = os.getenv("COINBASE_API_KEY")
-API_SECRET = os.getenv("COINBASE_API_SECRET")
+API_KEY = config["name"]
+API_SECRET = config["privateKey"]
 
 if __name__ == "__main__":
     async def main():
         api = AsyncCoinbaseAPI(
             api_key=API_KEY,
             api_secret=API_SECRET,
-            verbose=True
+            display_table=True
         )
         
         start = "1625097600"

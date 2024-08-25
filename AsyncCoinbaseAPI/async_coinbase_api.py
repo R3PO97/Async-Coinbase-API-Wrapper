@@ -1,26 +1,29 @@
-import asyncio
 import uuid
+import asyncio
+import logging
 from datetime import datetime
 from tabulate import tabulate
 from coinbase.rest import RESTClient
 
 class AsyncCoinbaseAPI:
-    def __init__(self, api_key: str, api_secret: str, verbose: bool = False):
+    def __init__(self, api_key: str, api_secret: str, display_table: bool = False):
         """
         Initialize the AsyncCoinbaseAPI.
 
         Args:
             api_key (str): Coinbase API key.
             api_secret (str): Coinbase API secret.
-            verbose (bool, optional): If True, enables task monitoring. Defaults to False.
+            display_table (bool, optional): If True, enables task monitoring. Defaults to False.
         """
+        self.setup_logger()
+
         self.client = RESTClient(api_key=api_key, api_secret=api_secret)
 
         self.tasks = []
 
-        self.verbose = verbose
-        if self.verbose:
-            self.monitor_task = asyncio.create_task(self.monitor_tasks(refresh_interval=0.2))
+        self.display_table = display_table
+        if self.display_table:
+            self.monitor_task = asyncio.create_task(self.monitor_tasks(refresh_interval=0.1))
 
     async def async_call(self, method_name: str, **kwargs):
         """
@@ -46,6 +49,7 @@ class AsyncCoinbaseAPI:
                 result = await loop.run_in_executor(None, lambda: method(**kwargs))
                 return result, None
             except Exception as e:
+                self.logger.error(f"Task ID: {task_id} - Error executing task for method '{method_name}': {str(e)}", exc_info=True)
                 return None, type(e).__name__
 
         task = asyncio.create_task(wrapped_method())
@@ -81,7 +85,7 @@ class AsyncCoinbaseAPI:
         if tasks:
             await asyncio.gather(*tasks)
 
-        if self.verbose and hasattr(self, 'monitor_task'):
+        if self.display_table and hasattr(self, 'monitor_task'):
             self.monitor_task.cancel()
             try:
                 await self.monitor_task
@@ -91,9 +95,29 @@ class AsyncCoinbaseAPI:
         self.tasks.clear()
         print("All tasks completed and resources closed.")
 
+    def setup_logger(self):
+        """
+        Sets up the logger.
+        """
+        self.logger = logging.getLogger("AsyncCoinbaseAPI")
+        self.logger.setLevel(logging.ERROR)
+
+        log_file_name = datetime.now().strftime("logs/%Y%m%d_%H%M%S.log")
+        file_handler = logging.FileHandler(log_file_name)
+        file_handler.setLevel(logging.ERROR)
+
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+
+        rest_client_logger = logging.getLogger("coinbase.RESTClient")
+        rest_client_logger.setLevel(logging.CRITICAL)
+
+
+
     def get_tasks_info(self):
         """
-        Returns a list of dictionaries with information about all tracked tasks.
+        Get a list of dictionaries with information on tracked tasks.
 
         Returns:
             List[Dict]: List containing task information (task ID, method name, state, result, exception, timestamp).

@@ -1,3 +1,5 @@
 async-cb-venv/
-.env
+cdp_api_key.json
 __pycache__/
+logs/*
+!logs/
